@@ -1,7 +1,6 @@
 # Pacman Util (WIP)
 
 This is a utility to help you to manage packages in your arch linux.
-> Currently, hardcoded to move all CachyOS package to arch's default instead.
 
 # Dependency
 
