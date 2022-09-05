@@ -3,6 +3,7 @@ use std::process::{Command, Stdio};
 use anyhow::Result;
 use serde::Deserialize;
 use tracing::info;
+use crate::wrapper::pacman;
 
 #[derive(Deserialize, Debug)]
 pub struct InstallablePackage {
@@ -24,7 +25,7 @@ pub fn install_pkg(pkg: &InstallablePackage) -> Result<()> {
 		cmd.push(String::from("--asdeps"));
 	}
 	info!("Installing {}/{}",pkg.repo,pkg.name);
-	let mut child = Command::new("pacman").args(&cmd).stdout(Stdio::null()).stdin(Stdio::null()).spawn()?;
+	let mut child = pacman(&cmd)?;
 	child.wait()?;
 	Ok(())
 }

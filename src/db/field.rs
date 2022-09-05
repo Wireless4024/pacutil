@@ -1,10 +1,3 @@
-use serde::ser::SerializeStruct;
-use serde::Serialize;
-
-use crate::db::field_type_extractor::FieldTypeExtractor;
-use crate::db::Table;
-use crate::ser::SerError;
-
 #[derive(Debug)]
 pub struct Field {
 	pub name: String,
@@ -30,27 +23,46 @@ pub enum FieldType {
 	Unsupported,
 }
 
-trait FieldNameImpl {
-	fn field_type(&self) -> FieldType {
-		FieldType::Unsupported
+impl FieldType {
+	pub fn sqlite_type(&self) -> &'static str {
+		match self {
+			FieldType::Char => {
+				"CHARACTER(1)"
+			}
+			FieldType::String => {
+				"TEXT"
+			}
+			FieldType::Bool => {
+				"TINYINT"
+			}
+			FieldType::U8 | FieldType::I8 => {
+				"TINYINT"
+			}
+			FieldType::U16 | FieldType::I16 => {
+				"SMALLINT"
+			}
+			FieldType::U32 | FieldType::I32 => {
+				"INTEGER"
+			}
+			FieldType::U64 | FieldType::I64 => {
+				"BIGINT"
+			}
+			FieldType::F32 => {
+				"FLOAT"
+			}
+			FieldType::F64 => {
+				"DOUBLE"
+			}
+			FieldType::Bytes => {
+				"BLOB"
+			}
+			_ => unreachable!()
+		}
 	}
 }
 
-impl<'a> SerializeStruct for Table {
-	type Ok = Table;
-	type Error = SerError;
-
-	fn serialize_field<T: ?Sized>(&mut self, key: &'static str, value: &T) -> Result<(), Self::Error> where T: Serialize {
-		let t = value.serialize(FieldTypeExtractor)?;
-		if t == FieldType::Unsupported {
-			Err(SerError(String::from("Unsupported Type")))
-		} else {
-			self.fields.push(Field { name: key.to_string(), typ: t });
-			Ok(())
-		}
-	}
-
-	fn end(self) -> Result<Self::Ok, Self::Error> {
-		Ok(self)
+trait FieldNameImpl {
+	fn field_type(&self) -> FieldType {
+		FieldType::Unsupported
 	}
 }

@@ -1,11 +1,13 @@
 use std::io::{BufRead, BufReader};
-use std::process::{Command, Stdio};
 
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::info;
 
-#[derive(Debug)]
+use crate::wrapper::pacman;
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Package {
 	repo: String,
 	name: String,
@@ -13,26 +15,32 @@ pub struct Package {
 	installed: Option<String>,
 }
 
+impl Default for Package {
+	fn default() -> Self {
+		Self {
+			repo: Default::default(),
+			name: Default::default(),
+			version: Default::default(),
+			installed: Some(Default::default()),
+		}
+	}
+}
+
 impl Package {
-	pub fn to_object(self) -> Value {
-		let installed = self.installed.map(|it| Value::String(it)).unwrap_or_default();
-		return json!({
+	pub fn cvt_object(self) -> Value {
+		let installed = self.installed.map(Value::String).unwrap_or_default();
+		json!({
 			"repo": self.repo,
 			"name": self.name,
 			"version": self.version,
 			"installed": installed,
-		});
+		})
 	}
 }
 
 pub fn list_all() -> Result<Vec<Package>> {
 	info!("Running `pacman -Sl`");
-	let mut cmd = Command::new("pacman")
-		.arg("-Sl")
-		.stdout(Stdio::piped())
-		.stdin(Stdio::null())
-		.stderr(Stdio::null())
-		.spawn()?;
+	let mut cmd = pacman(&"-Sl")?;
 	let mut stdout = BufReader::new(cmd.stdout.take().unwrap());
 	let mut data = Vec::new();
 	let mut buf = String::new();
