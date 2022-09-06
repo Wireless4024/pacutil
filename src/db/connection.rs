@@ -100,4 +100,8 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 		self.connection.query(&format!("INSERT INTO {} ({}) VALUES ({}) RETURNING *", &self.table.name, params, vals),
 		                      serde_rusqlite::to_params_named(&obj).unwrap().to_slice().as_slice()).unwrap()
 	}
+
+	pub fn add_all(&self, objs: Vec<T>) -> Vec<T> {
+		objs.into_iter().map(|it| self.add(it)).collect()
+	}
 }
