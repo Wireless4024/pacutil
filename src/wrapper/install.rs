@@ -1,6 +1,6 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use serde::Deserialize;
-use tracing::info;
+use tracing::{error, info};
 
 use crate::wrapper::pacman;
 
@@ -51,7 +51,10 @@ pub fn install_pkgs(pkgs: &[impl AsRef<InstallablePackage>]) -> Result<()> {
 
 	info!("Installing {} packages",exp_len);
 	let mut child = pacman(&exps_cmd)?;
-	child.wait()?;
+	if !child.wait()?.success() {
+		error!("Error while executing pacman");
+		bail!("Failed to execute pacman")
+	};
 
 	let mut deps_cmd = Vec::new();
 	deps_cmd.push(String::from("-S"));
@@ -61,6 +64,9 @@ pub fn install_pkgs(pkgs: &[impl AsRef<InstallablePackage>]) -> Result<()> {
 
 	info!("Installing {} packages as dependency",deps_len);
 	let mut child = pacman(&deps_cmd)?;
-	child.wait()?;
+	if !child.wait()?.success() {
+		error!("Error while executing pacman");
+		bail!("Failed to execute pacman")
+	};
 	Ok(())
 }
