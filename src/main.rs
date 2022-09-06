@@ -1,7 +1,7 @@
 use crate::db::db_init;
 use crate::util::right_join;
 use crate::wrapper::info::list_installed;
-use crate::wrapper::repo::{list_all, Package};
+use crate::wrapper::repo::{list_all, list_to_db, Package};
 
 mod wrapper;
 mod util;
@@ -16,6 +16,8 @@ fn main() -> anyhow::Result<()> {
 	}*/
 	let db = db_init()?;
 	let repo = db.get_repository::<Package>();
+	list_to_db(&repo)?;
+	println!("{:?}", repo.all());
 	/*
 		for x in list_installed_with_detail() {
 			if let Multiple(arr) = x {
