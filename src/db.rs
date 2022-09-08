@@ -5,3 +5,4 @@ mod connection;
 mod field_type_extractor;
 mod field;
 mod table;
+mod util;

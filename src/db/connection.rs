@@ -3,13 +3,17 @@ use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 
 use anyhow::Result;
-use rusqlite::{Connection, Params};
+use rusqlite::{Connection, Params, ToSql};
+use rusqlite::types::Value as SqlValue;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde_json::Value;
 use serde_rusqlite::DeserRows;
 use tracing::{debug, info};
 
 use crate::db::table::{Table, TableStructureGenerator};
+use crate::db::util::QueryFilter;
+use crate::try_and;
 
 pub fn db_init() -> Result<DbHandler> {
 	info!("Creating in-memory database");
@@ -103,5 +107,68 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 
 	pub fn add_all(&self, objs: Vec<T>) -> Vec<T> {
 		objs.into_iter().map(|it| self.add(it)).collect()
+	}
+
+	pub fn find(&self, filter: Value) -> Vec<T> {
+		let mut f = String::new();
+		let mut params: Vec<(String, SqlValue)> = Vec::new();
+		match filter {
+			Value::Object(obj) => {
+				for (field, value) in obj {
+					if !self.table.fields.iter().any(|it| it.name == field) {
+						// ignore due table don't have this field
+						continue;
+					}
+					match value {
+						Value::Null => {
+							try_and!(f);
+							f.push_str(&field);
+							f.push_str(" IS NULL");
+						}
+						Value::Bool(b) => {
+							try_and!(f);
+							f.push_str(&field);
+							f.push('=');
+							f.push_str(":");
+							f.push_str(&field);
+							params.push((field, SqlValue::from(b)));
+						}
+						Value::Number(n) => {
+							try_and!(f);
+							f.push_str(&field);
+							f.push('=');
+							f.push_str(":");
+							f.push_str(&field);
+							params.push((field, if n.is_f64() { SqlValue::from(n.as_f64()) } else { SqlValue::from(n.as_i64()) }));
+						}
+						Value::String(s) => {
+							try_and!(f);
+							f.push_str(&field);
+							f.push_str(" MATCH :");
+							f.push_str(&field);
+							params.push((field, SqlValue::from(s)));
+						}
+						Value::Array(_) => {
+							unreachable!()
+						}
+						Value::Object(obj) => {
+							let (sql, vars) = QueryFilter::from_json(Value::Object(obj)).to_sql(&field);
+							if !sql.is_empty() {
+								try_and!(f);
+								f.push_str(&sql);
+								params.extend(vars);
+							}
+						}
+					}
+				}
+			}
+			_ => unreachable!()
+		};
+		let param_ref :Vec<(&str,&dyn ToSql)>= params.iter().map(|it|(it.0.as_str(),(&it.1 as &dyn ToSql))).collect::<Vec<_>>();
+		let  p =param_ref.as_slice();
+		println!("{}", format!("SELECT * FROM {} WHERE {}", &self.table.name, f));
+		println!("{:?}", params);
+		todo!("NYI")
+		//self.connection.query_all(&format!("SELECT * FROM {} WHERE {}", &self.table.name,f), p).unwrap()
 	}
 }

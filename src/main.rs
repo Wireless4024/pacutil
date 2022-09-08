@@ -1,3 +1,4 @@
+use serde_json::json;
 use crate::db::db_init;
 use crate::util::right_join;
 use crate::wrapper::info::list_installed;
@@ -16,7 +17,8 @@ fn main() -> anyhow::Result<()> {
 	}*/
 	let db = db_init()?;
 	let repo = db.get_repository::<Package>();
-	list_to_db(&repo)?;
+	//list_to_db(&repo)?;
+	repo.find(json!({"name":"hello","repo":null}));
 	println!("{:?}", repo.all());
 	/*
 		for x in list_installed_with_detail() {
