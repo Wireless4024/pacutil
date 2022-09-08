@@ -8,7 +8,6 @@ use rusqlite::types::Value as SqlValue;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use serde_rusqlite::DeserRows;
 use tracing::{debug, info};
 
 use crate::db::table::{Table, TableStructureGenerator};
@@ -47,18 +46,20 @@ impl DerefMut for DbHandler {
 
 impl DbHandler {
 	pub fn query<'de, T: DeserializeOwned>(&self, sql: &str, param: impl Params) -> Result<T> {
-		Ok(self.query_row(sql, param, |row| Ok(serde_rusqlite::from_row::<T>(row)))??)
+		//Ok(self.query_row(sql, param, |row| Ok(serde_rusqlite::from_row::<T>(row)))??)
+		todo!()
 	}
 
 	pub fn query_all<T: DeserializeOwned>(&self, sql: &str, param: impl Params) -> Result<Vec<T>> {
-		let mut stmt = self.prepare(sql)?;
-		let rows = stmt.query(param)?;
-		let rows: DeserRows<T> = serde_rusqlite::from_rows::<T>(rows);
-		let mut res = Vec::new();
-		for row in rows {
-			res.push(row?)
-		}
-		Ok(res)
+		// let mut stmt = self.prepare(sql)?;
+		// let rows = stmt.query(param)?;
+		// let rows: DeserRows<T> = serde_rusqlite::from_rows::<T>(rows);
+		// let mut res = Vec::new();
+		// for row in rows {
+		// 	res.push(row?)
+		// }
+		// Ok(res)
+		todo!()
 	}
 
 	pub fn get_repository_from<S: Serialize + DeserializeOwned>(&self, s: S) -> Repository<S> {
@@ -101,8 +102,9 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 		}
 		params.pop();
 		vals.pop();
-		self.connection.query(&format!("INSERT INTO {} ({}) VALUES ({}) RETURNING *", &self.table.name, params, vals),
-		                      serde_rusqlite::to_params_named(&obj).unwrap().to_slice().as_slice()).unwrap()
+		todo!()
+		// self.connection.query(&format!("INSERT INTO {} ({}) VALUES ({}) RETURNING *", &self.table.name, params, vals),
+		//                       serde_rusqlite::to_params_named(&obj).unwrap().to_slice().as_slice()).unwrap()
 	}
 
 	pub fn add_all(&self, objs: Vec<T>) -> Vec<T> {
