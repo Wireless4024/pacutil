@@ -39,7 +39,7 @@ impl Package {
 	}
 }
 
-pub fn list_all() -> Result<Vec<Package>> {
+/*pub fn list_all() -> Result<Vec<Package>> {
 	info!("Running `pacman -Sl`");
 	let mut cmd = pacman(&"-Sl")?;
 	let mut stdout = BufReader::new(cmd.stdout.take().unwrap());
@@ -77,7 +77,7 @@ pub fn list_all() -> Result<Vec<Package>> {
 	info!("Found {} available packages", data.len());
 	Ok(data)
 }
-
+*/
 pub fn list_to_db(repository: &Repository<'_, Package>) -> Result<u64> {
 	info!("Running `pacman -Sl`");
 	let mut cmd = pacman(&"-Sl")?;
