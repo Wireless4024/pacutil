@@ -1,6 +1,7 @@
-use rusqlite::types::Value as SqlValue;
+use rusqlite::{Row, Rows};
+use rusqlite::types::{Value as SqlValue, ValueRef};
 use serde::Deserialize;
-use serde_json::{from_value, Value};
+use serde_json::{from_value, Map, Number, Value};
 
 #[derive(Deserialize, Debug)]
 pub struct QueryFilter {
@@ -101,4 +102,36 @@ impl QueryFilter {
 
 		(sql, param)
 	}
+}
+
+pub fn from_rows(mut rows: Rows) -> Value {
+	let mut arr = Vec::new();
+	while let Ok(Some(row)) = rows.next() {
+		arr.push(from_row(row));
+	}
+	Value::Array(arr)
+}
+
+pub fn from_row(row: &Row<'_>) -> Value {
+	let mut map = Map::new();
+	for x in row.as_ref().column_names() {
+		map.insert(x.to_string(), match row.get_ref(x).unwrap() {
+			ValueRef::Null => {
+				Value::Null
+			}
+			ValueRef::Integer(i) => {
+				Value::Number(Number::from(i))
+			}
+			ValueRef::Real(i) => {
+				Value::Number(Number::from_f64(i).unwrap())
+			}
+			ValueRef::Text(t) => {
+				Value::String(String::from_utf8_lossy(t).to_string())
+			}
+			ValueRef::Blob(blob) => {
+				Value::Array(blob.iter().map(|&it| Value::Number(Number::from(it))).collect())
+			}
+		});
+	}
+	Value::Object(map)
 }
