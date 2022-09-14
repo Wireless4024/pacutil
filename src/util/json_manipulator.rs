@@ -131,7 +131,7 @@ pub fn right_join(left: &[Value], right: &mut Vec<Value>, on: &str) {
 			let value_wrapper = ValueWrapper { inner: right_key };
 			if let Some(left) = left_map.get(&value_wrapper) { // fail if use remove
 				if !left.is_object() { continue; }
-				left.as_object().map(|it| it.clone())
+				left.as_object().cloned()
 			} else {
 				None
 			}
@@ -171,7 +171,7 @@ pub fn obj_match(left: &Value, right: &Value) -> bool {
 			}
 		}
 		Value::Array(arr) => {
-			arr.iter().fold(false, |a, b| a || obj_match(b, right))
+			arr.iter().any(|b| obj_match(b, right))
 		}
 		Value::Object(map) => {
 			for (k, v1) in map {
@@ -184,7 +184,7 @@ pub fn obj_match(left: &Value, right: &Value) -> bool {
 					return false;
 				}
 			}
-			return true;
+			true
 		}
 	}
 }
