@@ -1,10 +1,6 @@
 use std::process::{Child, Command, Stdio};
 
 use anyhow::Result;
-use serde_json::{json, Value};
-
-use crate::{list_all, list_installed, right_join};
-use crate::util::{Array, group, obj_match};
 
 pub mod repo;
 pub mod info;
@@ -40,11 +36,11 @@ pub fn pacman<'a>(args: &'a impl PacmanArg<'a>) -> Result<Child> {
 		.stderr(Stdio::null())
 		.spawn()?)
 }
-
+/*
 pub fn list_installed_with_detail() -> Vec<Array<Value>> {
 	let mut right = list_all().unwrap().into_iter().map(|it| it.cvt_object()).collect::<Vec<_>>();
 	let left = list_installed().unwrap();
 	right_join(&left, &mut right, "name");
 	let packages = right.into_iter().filter(|it| obj_match(&json!({"installed":"*"}), it)).collect();
 	group(packages, "name")
-}
+}*/

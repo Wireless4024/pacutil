@@ -45,7 +45,7 @@ impl DerefMut for DbHandler {
 }
 
 impl DbHandler {
-	pub fn query<'de, T: DeserializeOwned>(&self, sql: &str, param: impl Params) -> Result<T> {
+	pub fn query<T: DeserializeOwned>(&self, sql: &str, param: impl Params) -> Result<T> {
 		Ok(self.query_row(sql, param, |row| Ok(from_value(from_row(row))))??)
 	}
 
@@ -169,7 +169,7 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 			f.push_str("1=1");
 		}
 		println!("{:?}", format!("SELECT * FROM {} WHERE {}", &self.table.name, f));
-		
+
 		self.connection.query_all(&format!("SELECT * FROM {} WHERE {}", &self.table.name, f), p).unwrap()
 	}
 }

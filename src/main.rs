@@ -1,9 +1,5 @@
-use serde_json::json;
-
 use crate::db::db_init;
-use crate::util::right_join;
-use crate::wrapper::info::list_installed;
-use crate::wrapper::repo::{list_all, list_to_db, Package};
+use crate::wrapper::info::{InstalledPackage, list_installed};
 
 mod wrapper;
 mod util;
@@ -17,10 +13,11 @@ fn main() -> anyhow::Result<()> {
 		println!("{:?}", x);
 	}*/
 	let db = db_init()?;
-	let repo = db.get_repository::<Package>();
-	list_to_db(&repo)?;
-	println!("{:?}", repo.find(json!({"repo":"extra"})));
-	;
+	let repo = db.get_repository::<InstalledPackage>();
+//	list_to_db(&repo)?;
+	println!("{:?}", list_installed(&repo)?);
+	println!("{:?}", repo.all());
+
 	//println!("{:?}", repo.all());
 	/*
 		for x in list_installed_with_detail() {
