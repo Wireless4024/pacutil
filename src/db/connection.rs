@@ -11,7 +11,7 @@ use serde_json::{from_value, Value};
 use tracing::{debug, info};
 
 use crate::db::table::{Table, TableStructureGenerator};
-use crate::db::util::{from_row, from_rows, QueryFilter};
+use crate::db::util::{from_row, from_rows, QueryFilter, to_named_param};
 use crate::try_and;
 
 pub fn db_init() -> Result<DbHandler> {
@@ -83,7 +83,6 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 	}
 
 	pub fn add(&self, obj: T) -> T {
-		//serde_rusqlite::
 		let mut params = String::new();
 		let mut vals = String::new();
 		for x in &self.table.fields {
@@ -95,9 +94,11 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 		}
 		params.pop();
 		vals.pop();
-		todo!()
-		// self.connection.query(&format!("INSERT INTO {} ({}) VALUES ({}) RETURNING *", &self.table.name, params, vals),
-		//                       serde_rusqlite::to_params_named(&obj).unwrap().to_slice().as_slice()).unwrap()
+		let pp = to_named_param(&obj);
+		let param_ref: Vec<(&str, &dyn ToSql)> = pp.iter().map(|it| (it.0.as_str(), (&it.1 as &dyn ToSql))).collect::<Vec<_>>();
+		let p = param_ref.as_slice();
+		self.connection.query(&format!("INSERT INTO {} ({}) VALUES ({}) RETURNING *", &self.table.name, params, vals),
+		                      p).unwrap()
 	}
 
 	pub fn add_all(&self, objs: Vec<T>) -> Vec<T> {
@@ -124,7 +125,7 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 							try_and!(f);
 							f.push_str(&field);
 							f.push('=');
-							f.push_str(":");
+							f.push(':');
 							f.push_str(&field);
 							field.insert(0, ':');
 							params.push((field, SqlValue::from(b)));
@@ -133,7 +134,7 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 							try_and!(f);
 							f.push_str(&field);
 							f.push('=');
-							f.push_str(":");
+							f.push(':');
 							f.push_str(&field);
 							field.insert(0, ':');
 							params.push((field, if n.is_f64() { SqlValue::from(n.as_f64()) } else { SqlValue::from(n.as_i64()) }));
@@ -164,7 +165,11 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 		};
 		let param_ref: Vec<(&str, &dyn ToSql)> = params.iter().map(|it| (it.0.as_str(), (&it.1 as &dyn ToSql))).collect::<Vec<_>>();
 		let p = param_ref.as_slice();
-	
+		if f.is_empty() {
+			f.push_str("1=1");
+		}
+		println!("{:?}", format!("SELECT * FROM {} WHERE {}", &self.table.name, f));
+		
 		self.connection.query_all(&format!("SELECT * FROM {} WHERE {}", &self.table.name, f), p).unwrap()
 	}
 }

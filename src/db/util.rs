@@ -1,7 +1,7 @@
 use rusqlite::{Row, Rows};
 use rusqlite::types::{Value as SqlValue, ValueRef};
-use serde::Deserialize;
-use serde_json::{from_value, Map, Number, Value};
+use serde::{Deserialize, Serialize};
+use serde_json::{from_value, Map, Number, to_value, Value};
 
 #[derive(Deserialize, Debug)]
 pub struct QueryFilter {
@@ -135,4 +135,19 @@ pub fn from_row(row: &Row<'_>) -> Value {
 		});
 	}
 	Value::Object(map)
+}
+
+pub fn to_named_param<T: Serialize>(val: &T) -> Vec<(String, SqlValue)> {
+	json_to_named_param(to_value(val).expect("Convert value to json"))
+}
+
+pub fn json_to_named_param(json: Value) -> Vec<(String, SqlValue)> {
+	let mut pairs = Vec::new();
+	if let Value::Object(obj) = json {
+		for (mut key, value) in obj {
+			key.insert(0, ':');
+			pairs.push((key, value_to_sql(value)));
+		}
+	}
+	pairs
 }

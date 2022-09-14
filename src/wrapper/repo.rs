@@ -103,12 +103,12 @@ pub fn list_to_db(repository: &Repository<'_, Package>) -> Result<u64> {
 					None
 				}
 			});
-			// repository.add(Package {
-			// 	repo: repo.to_string(),
-			// 	name: name.to_string(),
-			// 	version,
-			// 	installed,
-			// });
+			repository.add(Package {
+				repo: repo.to_string(),
+				name: name.to_string(),
+				version,
+				installed,
+			});
 			packages += 1;
 		}
 
