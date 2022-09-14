@@ -91,6 +91,7 @@ impl QueryFilter {
 			param_name.push_str("_ne");
 			sql.push_str(&param_name);
 			sql.push_str("!=");
+			param_name.insert(0, ':');
 			param.push((param_name, value_to_sql(inner.clone())));
 		}
 
