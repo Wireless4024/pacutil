@@ -5,22 +5,22 @@ use serde_json::{from_value, Map, Number, to_value, Value};
 
 #[derive(Deserialize, Debug)]
 pub struct QueryFilter {
-	#[serde(default, rename = "$ne")]
+	#[serde(default = "default_value", rename = "$ne")]
 	ne: Option<Value>,
 
-	#[serde(default, rename = "$lt")]
+	#[serde(default = "default_value", rename = "$lt")]
 	lt: Option<Value>,
 
-	#[serde(default, rename = "$lte")]
+	#[serde(default = "default_value", rename = "$lte")]
 	lte: Option<Value>,
 
-	#[serde(default, rename = "$eq")]
+	#[serde(default = "default_value", rename = "$eq")]
 	eq: Option<Value>,
 
-	#[serde(default, rename = "$gte")]
+	#[serde(default = "default_value", rename = "$gte")]
 	gte: Option<Value>,
 
-	#[serde(default, rename = "$gt")]
+	#[serde(default = "default_value", rename = "$gt")]
 	gt: Option<Value>,
 
 	#[serde(default, rename = "$in")]
@@ -28,6 +28,10 @@ pub struct QueryFilter {
 
 	#[serde(default, rename = "$nin")]
 	not_include: Option<Vec<Value>>,
+}
+
+fn default_value() -> Option<Value> {
+	Some(Value::Null)
 }
 
 fn value_to_sql(value: Value) -> SqlValue {
@@ -62,17 +66,22 @@ macro_rules! try_and {
 macro_rules! try_concat {
     ($sql:ident, $param:ident, $field:ident, $value:expr, $e:literal,$param_name:literal) => {
 	    if let Some(inner) = $value {
-		    try_and!($sql);
+		    if !inner.is_null() {
+			    try_and!($sql);
+				$sql.push_str($field);
+				$sql.push(' ');
+				$sql.push_str($e);
+				$sql.push(' ');
+				$sql.push(':');
+			    let mut param_name = String::new();
+			    param_name.push_str($field);
+				param_name.push_str($param_name);
+			    $sql.push_str(&param_name);
+				$param.push((param_name, value_to_sql(inner.clone())));
+			}
+	    } else {
 			$sql.push_str($field);
-			$sql.push(' ');
-			$sql.push_str($e);
-			$sql.push(' ');
-			$sql.push(':');
-		    let mut param_name = String::new();
-		    param_name.push_str($field);
-			param_name.push_str($param_name);
-		    $sql.push_str(&param_name);
-			$param.push((param_name, value_to_sql(inner.clone())));
+			$sql.push_str(" IS NOT NULL");
 		}
     };
 }
@@ -86,13 +95,18 @@ impl QueryFilter {
 		let mut sql = String::new();
 		let mut param = Vec::new();
 		if let Some(inner) = &self.ne {
-			let mut param_name = String::new();
-			param_name.push_str(field);
-			param_name.push_str("_ne");
-			sql.push_str(&param_name);
-			sql.push_str("!=");
-			param_name.insert(0, ':');
-			param.push((param_name, value_to_sql(inner.clone())));
+			if !inner.is_null() {
+				let mut param_name = String::new();
+				param_name.push_str(field);
+				param_name.push_str("_ne");
+				sql.push_str(&param_name);
+				sql.push_str("!=");
+				param_name.insert(0, ':');
+				param.push((param_name, value_to_sql(inner.clone())));
+			}
+		} else {
+			sql.push_str(field);
+			sql.push_str(" IS NOT NULL");
 		}
 
 		try_concat!(sql,param,field,{&self.lt},"<","_lt");

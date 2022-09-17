@@ -56,13 +56,33 @@ impl<T: Serialize + DeserializeOwned> Table<T> {
 		let mut iter = self.fields.iter();
 		let first = iter.next().expect("Table should have at least 1 column");
 		res.push_str(&first.name);
-	//	res.push(' ');
-	//	res.push_str(first.typ.sqlite_type());
+		//	res.push(' ');
+		//	res.push_str(first.typ.sqlite_type());
 		for f in iter {
 			res.push(',');
 			res.push_str(&f.name);
-		//	res.push(' ');
-		//	res.push_str(f.typ.sqlite_type());
+			//	res.push(' ');
+			//	res.push_str(f.typ.sqlite_type());
+		}
+		res.push(')');
+		res
+	}
+
+	pub fn create_table_script(&self) -> String {
+		let mut res = String::new();
+		res.push_str("CREATE TABLE IF NOT EXISTS ");
+		res.push_str(&self.name);
+		res.push_str(" (");
+		let mut iter = self.fields.iter();
+		let first = iter.next().expect("Table should have at least 1 column");
+		res.push_str(&first.name);
+		res.push(' ');
+		res.push_str(first.typ.sqlite_type());
+		for f in iter {
+			res.push(',');
+			res.push_str(&f.name);
+			res.push(' ');
+			res.push_str(f.typ.sqlite_type());
 		}
 		res.push(')');
 		res

@@ -73,9 +73,14 @@ pub struct Repository<'a, T: Serialize + DeserializeOwned> {
 
 impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 	fn init(self) -> Self {
-		println!("{}", self.table.create_fts_script());
-		self.connection.execute(&self.table.create_fts_script(), []).expect("Create table");
+		self.connection.execute(&self.table.create_table_script(), []).expect("Create table");
 		self
+	}
+
+	pub fn take_all(&self) -> Vec<T> {
+		let res = self.all();
+		self.connection.execute(&format!("DELETE FROM {} WHERE 1=1", &self.table.name), []).unwrap();
+		res
 	}
 
 	pub fn all(&self) -> Vec<T> {
@@ -108,6 +113,8 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 	pub fn find(&self, filter: Value) -> Vec<T> {
 		let mut f = String::new();
 		let mut params: Vec<(String, SqlValue)> = Vec::new();
+		println!("{:?}", from_value::<QueryFilter>(serde_json::json!({"$ne":null})));
+		;
 		match filter {
 			Value::Object(obj) => {
 				for (mut field, value) in obj {
@@ -115,6 +122,9 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 						// ignore due table don't have this field
 						continue;
 					}
+					println!("{:?}", field);
+					println!("{:?}", value);
+
 					match value {
 						Value::Null => {
 							try_and!(f);
@@ -142,7 +152,11 @@ impl<'a, T: Serialize + DeserializeOwned> Repository<'a, T> {
 						Value::String(s) => {
 							try_and!(f);
 							f.push_str(&field);
-							f.push_str(" MATCH :");
+							if s.contains(['_', '%']) {
+								f.push_str(" LIKE :");
+							} else {
+								f.push_str(" = :");
+							}
 							f.push_str(&field);
 							field.insert(0, ':');
 							params.push((field, SqlValue::from(s)));

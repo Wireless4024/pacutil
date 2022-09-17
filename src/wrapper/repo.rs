@@ -10,10 +10,10 @@ use crate::wrapper::pacman;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Package {
-	repo: String,
-	name: String,
-	version: String,
-	installed: Option<String>,
+	pub repo: String,
+	pub name: String,
+	pub version: String,
+	pub installed: Option<String>,
 }
 
 impl Default for Package {
